@@ -6,7 +6,11 @@ import com.dcpbe.model.dto.response.AuthResponse;
 import com.dcpbe.model.dto.response.AuthTokenResponse;
 
 public interface AuthService {
-    AuthResponse login(LoginRequest request);
+    String buildAuthorizationRedirectUrl();
+    String buildCallbackErrorRedirectUrl(String error, String errorDescription);
+    String exchangeCodeAndBuildFrontendRedirectUrl(String code, String state);
+    String handleCallback(String code, String state, String error, String errorDescription);
+    AuthTokenResponse refresh(String refreshToken);
 
-    AuthTokenResponse refresh(RefreshTokenRequest request);
+    void logout(String refreshToken);
 }

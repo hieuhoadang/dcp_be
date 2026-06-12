@@ -1,16 +1,13 @@
 package com.dcpbe.model.entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.RequiredArgsConstructor;
+import lombok.*;
 
 @Entity
 @Table(name = "users")
-@Data
 @NoArgsConstructor
-@AllArgsConstructor
+@Getter
+@Setter
 public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -23,11 +20,14 @@ public class User {
     private String email;
     @Column(nullable = false)
     private String position;
+    @Column(name = "roles")
+    private String roles;
 
-    public User(String username, String fullname, String email, String position) {
+    public User(String username, String fullname, String position, String roles) {
         this.username = username;
         this.fullname = fullname;
-        this.email = email;
         this.position = position;
+        this.roles = roles;
     }
+
 }

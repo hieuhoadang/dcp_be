@@ -16,7 +16,6 @@ import java.util.List;
 public class UserProfileResponse {
     String username;
     String fullName;
-    String email;
     String position;
     List<String> roles;
 }
