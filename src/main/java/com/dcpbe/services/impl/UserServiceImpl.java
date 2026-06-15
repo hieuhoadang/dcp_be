@@ -4,10 +4,15 @@ import com.dcpbe.config.KeycloakJwtRoles;
 import com.dcpbe.model.dto.request.UserUpsertRequest;
 import com.dcpbe.model.dto.response.UserListItemResponse;
 import com.dcpbe.model.dto.response.UserProfileResponse;
+import com.dcpbe.model.dto.response.UserPageResponse;
 import com.dcpbe.model.entity.User;
 import com.dcpbe.repository.UserRepository;
 import com.dcpbe.services.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
@@ -15,6 +20,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Arrays;
+import java.util.Comparator;
+import java.util.Locale;
 import java.util.List;
 
 @Service
@@ -41,6 +48,33 @@ public class UserServiceImpl implements UserService {
                 .stream()
                 .map(this::toListItemResponse)
                 .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public UserPageResponse pageUsers(String search, String sortBy, String sortOrder,
+                                      int pageIndex, int pageSize, String position) {
+        int safePageIndex = Math.max(pageIndex - 1, 0);
+        int safePageSize = Math.max(pageSize, 1);
+
+        Sort sort = Sort.by(
+                "descend".equalsIgnoreCase(sortOrder) ? Sort.Direction.DESC : Sort.Direction.ASC,
+                sortBy != null ? sortBy : "id"
+        );
+
+        Pageable pageable = PageRequest.of(safePageIndex, safePageSize, sort);
+
+        String searchParam = (search == null || search.isBlank()) ? null : search.trim();
+        String positionParam = (position == null || position.isBlank()) ? null : position;
+
+        Page<User> page = userRepository.searchUsers(searchParam, positionParam, pageable);
+
+        List<UserListItemResponse> content = page.getContent()
+                .stream()
+                .map(this::toListItemResponse)
+                .toList();
+
+        return new UserPageResponse(content, page.getTotalElements());
     }
 
     @Override
@@ -183,5 +217,63 @@ public class UserServiceImpl implements UserService {
 
     private String safeText(String value, String fallback) {
         return value == null || value.isBlank() ? fallback : value.trim();
+    }
+
+    private boolean matchesSearch(User user, String search) {
+        if (search == null || search.isBlank()) {
+            return true;
+        }
+
+        String term = normalize(search);
+        return normalize(user.getUsername()).contains(term)
+                || normalize(user.getFullname()).contains(term)
+                || normalize(user.getEmail()).contains(term)
+                || normalize(user.getPosition()).contains(term)
+                || normalize(user.getRoles()).contains(term);
+    }
+
+    private boolean matchesPosition(User user, String position) {
+        if (position == null || position.isBlank()) {
+            return true;
+        }
+        return normalize(user.getPosition()).contains(normalize(position));
+    }
+
+    private Comparator<User> buildComparator(String sortBy, String sortOrder) {
+        Comparator<User> comparator = switch (sortBy == null ? "" : sortBy) {
+            case "username" -> Comparator.comparing(User::getUsername, this::compareNullable);
+            case "fullName" -> Comparator.comparing(User::getFullname, this::compareNullable);
+            case "email" -> Comparator.comparing(User::getEmail, this::compareNullable);
+            case "position" -> Comparator.comparing(User::getPosition, this::compareNullable);
+            default -> Comparator.comparing(User::getId, this::compareNullable);
+        };
+
+        if ("descend".equalsIgnoreCase(sortOrder)) {
+            comparator = comparator.reversed();
+        }
+        return comparator;
+    }
+
+    private int compareNullable(String left, String right) {
+        String a = left == null ? "" : left;
+        String b = right == null ? "" : right;
+        return a.compareToIgnoreCase(b);
+    }
+
+    private <T extends Comparable<T>> int compareNullable(T left, T right) {
+        if (left == null && right == null) {
+            return 0;
+        }
+        if (left == null) {
+            return -1;
+        }
+        if (right == null) {
+            return 1;
+        }
+        return left.compareTo(right);
+    }
+
+    private String normalize(String value) {
+        return value == null ? "" : value.trim().toLowerCase(Locale.ROOT);
     }
 }

@@ -3,6 +3,7 @@ package com.dcpbe.controller;
 import com.dcpbe.model.dto.request.UserUpsertRequest;
 import com.dcpbe.model.dto.response.UserListItemResponse;
 import com.dcpbe.model.dto.response.UserProfileResponse;
+import com.dcpbe.model.dto.response.UserPageResponse;
 import com.dcpbe.services.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -21,6 +22,18 @@ public class UserController {
     @GetMapping
     public ResponseEntity<List<UserListItemResponse>> listUsers() {
         return ResponseEntity.ok(userService.listUsers());
+    }
+
+    @GetMapping("/page")
+    public ResponseEntity<UserPageResponse> pageUsers(
+            @RequestParam(value = "search", required = false) String search,
+            @RequestParam(value = "sortBy", required = false) String sortBy,
+            @RequestParam(value = "sortOrder", required = false) String sortOrder,
+            @RequestParam(value = "pageIndex", defaultValue = "1") int pageIndex,
+            @RequestParam(value = "pageSize", defaultValue = "10") int pageSize,
+            @RequestParam(value = "position", required = false) String position
+    ) {
+        return ResponseEntity.ok(userService.pageUsers(search, sortBy, sortOrder, pageIndex, pageSize, position));
     }
 
     @GetMapping("/me")
