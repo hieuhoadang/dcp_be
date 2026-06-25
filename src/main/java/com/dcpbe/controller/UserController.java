@@ -31,9 +31,12 @@ public class UserController {
             @RequestParam(value = "sortOrder", required = false) String sortOrder,
             @RequestParam(value = "pageIndex", defaultValue = "1") int pageIndex,
             @RequestParam(value = "pageSize", defaultValue = "10") int pageSize,
-            @RequestParam(value = "position", required = false) String position
+            @RequestParam(value = "position", required = false) String position,
+            @RequestParam(value = "username", required = false) String username,
+            @RequestParam(value = "fullName", required = false) String fullName,
+            @RequestParam(value = "email", required = false) String email
     ) {
-        return ResponseEntity.ok(userService.pageUsers(search, sortBy, sortOrder, pageIndex, pageSize, position));
+        return ResponseEntity.ok(userService.pageUsers(search, sortBy, sortOrder, pageIndex, pageSize, position,username, fullName, email));
     }
 
     @GetMapping("/me")

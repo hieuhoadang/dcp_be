@@ -53,7 +53,7 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional(readOnly = true)
     public UserPageResponse pageUsers(String search, String sortBy, String sortOrder,
-                                      int pageIndex, int pageSize, String position) {
+                                      int pageIndex, int pageSize, String position, String username, String fullName, String email) {
         int safePageIndex = Math.max(pageIndex - 1, 0);
         int safePageSize = Math.max(pageSize, 1);
 
@@ -66,8 +66,11 @@ public class UserServiceImpl implements UserService {
 
         String searchParam = (search == null || search.isBlank()) ? null : search.trim();
         String positionParam = (position == null || position.isBlank()) ? null : position;
+        String usernameParam = (username == null || username.isBlank()) ? null : username.trim();
+        String fullNameParam = (fullName == null || fullName.isBlank()) ? null : fullName.trim();
+        String emailParam = (email == null || email.isBlank()) ? null : email.trim();
 
-        Page<User> page = userRepository.searchUsers(searchParam, positionParam, pageable);
+        Page<User> page = userRepository.searchUsers(searchParam, positionParam, usernameParam, fullNameParam, emailParam, pageable);
 
         List<UserListItemResponse> content = page.getContent()
                 .stream()
@@ -89,7 +92,7 @@ public class UserServiceImpl implements UserService {
 
         User user = new User();
         user.setUsername(request.getUsername().trim());
-        user.setFullname(safeText(request.getFullName(), request.getUsername()));
+        user.setFullName(safeText(request.getFullName(), request.getUsername()));
         user.setEmail(safeText(request.getEmail(), request.getUsername() + "@local"));
         user.setPosition(safeText(request.getPosition(), DEFAULT_POSITION));
         user.setRoles(joinRoles(request.getRoles()));
@@ -111,7 +114,7 @@ public class UserServiceImpl implements UserService {
             user.setUsername(requestedUsername);
         }
         if (request.getFullName() != null) {
-            user.setFullname(request.getFullName().trim());
+            user.setFullName(request.getFullName().trim());
         }
         if (request.getEmail() != null) {
             user.setEmail(request.getEmail().trim());
@@ -137,7 +140,7 @@ public class UserServiceImpl implements UserService {
     private UserProfileResponse createUserFromDatabase(Jwt jwt, User dbUser) {
         return new UserProfileResponse(
                 dbUser.getUsername(),
-                dbUser.getFullname(),
+                dbUser.getFullName(),
                 dbUser.getPosition(),
                 getRoles(jwt, dbUser)
         );
@@ -155,7 +158,7 @@ public class UserServiceImpl implements UserService {
     private UserListItemResponse toListItemResponse(User user) {
         return new UserListItemResponse(
                 user.getUsername(),
-                user.getFullname(),
+                user.getFullName(),
                 user.getEmail(),
                 user.getPosition(),
                 splitRoles(user.getRoles())
@@ -226,7 +229,7 @@ public class UserServiceImpl implements UserService {
 
         String term = normalize(search);
         return normalize(user.getUsername()).contains(term)
-                || normalize(user.getFullname()).contains(term)
+                || normalize(user.getFullName()).contains(term)
                 || normalize(user.getEmail()).contains(term)
                 || normalize(user.getPosition()).contains(term)
                 || normalize(user.getRoles()).contains(term);
@@ -242,7 +245,7 @@ public class UserServiceImpl implements UserService {
     private Comparator<User> buildComparator(String sortBy, String sortOrder) {
         Comparator<User> comparator = switch (sortBy == null ? "" : sortBy) {
             case "username" -> Comparator.comparing(User::getUsername, this::compareNullable);
-            case "fullName" -> Comparator.comparing(User::getFullname, this::compareNullable);
+            case "fullName" -> Comparator.comparing(User::getFullName, this::compareNullable);
             case "email" -> Comparator.comparing(User::getEmail, this::compareNullable);
             case "position" -> Comparator.comparing(User::getPosition, this::compareNullable);
             default -> Comparator.comparing(User::getId, this::compareNullable);
