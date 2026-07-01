@@ -11,7 +11,7 @@ import java.util.List;
 public interface UserService {
     UserProfileResponse getCurrentUser(Jwt jwt);
     List<UserListItemResponse> listUsers();
-    UserPageResponse pageUsers(String search, String sortBy, String sortOrder, int pageIndex, int pageSize, String position, String username, String fullName, String email);
+    UserPageResponse pageUsers(String search, List<String> sort, String sortBy, String sortOrder, int pageIndex, int pageSize, String position, String username, String fullName, String email);
     UserListItemResponse createUser(UserUpsertRequest request);
     UserListItemResponse updateUser(String username, UserUpsertRequest request);
     void deleteUser(String username);

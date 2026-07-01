@@ -5,6 +5,7 @@ import com.dcpbe.model.dto.response.UserListItemResponse;
 import com.dcpbe.model.dto.response.UserProfileResponse;
 import com.dcpbe.model.dto.response.UserPageResponse;
 import com.dcpbe.services.UserService;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -26,6 +27,7 @@ public class UserController {
 
     @GetMapping("/page")
     public ResponseEntity<UserPageResponse> pageUsers(
+            HttpServletRequest request,
             @RequestParam(value = "search", required = false) String search,
             @RequestParam(value = "sortBy", required = false) String sortBy,
             @RequestParam(value = "sortOrder", required = false) String sortOrder,
@@ -36,7 +38,10 @@ public class UserController {
             @RequestParam(value = "fullName", required = false) String fullName,
             @RequestParam(value = "email", required = false) String email
     ) {
-        return ResponseEntity.ok(userService.pageUsers(search, sortBy, sortOrder, pageIndex, pageSize, position,username, fullName, email));
+        List<String> sort = request.getParameterValues("sort") == null
+                ? List.of()
+                : List.of(request.getParameterValues("sort"));
+        return ResponseEntity.ok(userService.pageUsers(search, sort, sortBy, sortOrder, pageIndex, pageSize, position,username, fullName, email));
     }
 
     @GetMapping("/me")

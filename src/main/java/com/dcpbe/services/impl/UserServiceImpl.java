@@ -52,17 +52,12 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional(readOnly = true)
-    public UserPageResponse pageUsers(String search, String sortBy, String sortOrder,
+    public UserPageResponse pageUsers(String search, List<String> sort, String sortBy, String sortOrder,
                                       int pageIndex, int pageSize, String position, String username, String fullName, String email) {
         int safePageIndex = Math.max(pageIndex - 1, 0);
         int safePageSize = Math.max(pageSize, 1);
 
-        Sort sort = Sort.by(
-                "descend".equalsIgnoreCase(sortOrder) ? Sort.Direction.DESC : Sort.Direction.ASC,
-                sortBy != null ? sortBy : "id"
-        );
-
-        Pageable pageable = PageRequest.of(safePageIndex, safePageSize, sort);
+        Pageable pageable = PageRequest.of(safePageIndex, safePageSize, buildSort(sort, sortBy, sortOrder));
 
         String searchParam = (search == null || search.isBlank()) ? null : search.trim();
         String positionParam = (position == null || position.isBlank()) ? null : position;
@@ -78,6 +73,40 @@ public class UserServiceImpl implements UserService {
                 .toList();
 
         return new UserPageResponse(content, page.getTotalElements());
+    }
+
+    private Sort buildSort(List<String> sorts, String sortBy, String sortOrder) {
+        // fe không truyền sort thì tạo list rỗng
+        List<Sort.Order> orders = (sorts == null ? List.<String>of() : sorts).stream()
+                .map(this::parseSortOrder)
+                .filter(order -> order.getProperty() != null && !order.getProperty().isBlank())
+                .toList();
+
+        if (!orders.isEmpty()) {
+            return Sort.by(orders);
+        }
+
+        String property = (sortBy == null || sortBy.isBlank()) ? "username" : sortBy.trim();
+        return Sort.by(resolveDirection(sortOrder), property);
+    }
+
+    private Sort.Order parseSortOrder(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+
+        String[] parts = value.split(",", 2);
+        String property = parts[0] == null ? "" : parts[0].trim();
+        if(property.isBlank()) return null;
+        String directionRaw = parts.length > 1 ? parts[1] : null;
+        Sort.Direction direction = resolveDirection(directionRaw);
+        return new Sort.Order(direction, property);
+    }
+
+    private Sort.Direction resolveDirection(String value) {
+        return "descend".equalsIgnoreCase(value) || "desc".equalsIgnoreCase(value)
+                ? Sort.Direction.DESC
+                : Sort.Direction.ASC;
     }
 
     @Override
